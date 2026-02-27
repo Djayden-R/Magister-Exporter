@@ -2,29 +2,13 @@ from seleniumwire import webdriver  # Import from seleniumwire
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
-from dotenv import load_dotenv, set_key
-import os
+import json
 
-load_dotenv()
-
-logins: dict[str,dict[str,str]] = {}
-
-for name, value in os.environ.items():
-    if name.endswith('_USERNAME'):
-        person_name = name.split('_')[0]
-        if person_name not in logins.keys():
-            logins[person_name] = {}
-        logins[person_name]['username'] = value
-    elif name.endswith('_PASSWORD'):
-        person_name = name.split('_')[0]
-        if person_name not in logins.keys():
-            logins[person_name] = {}
-        logins[person_name]['password'] = value
+with open('credentials.json', 'r') as json_file:
+    credentials_json = json.load(json_file)
 
 
-for person_name, login in logins.items():
-    if 'username' not in login.keys() or 'password' not in login.keys():
-        pass
+for login in credentials_json['logins']:
 
     username = login['username']
     password = login['password']
@@ -49,10 +33,14 @@ for person_name, login in logins.items():
     submit_button = driver.find_element(By.ID, 'idSIButton9')
     submit_button.click()
 
-    request = driver.wait_for_request('api/leerlingen/13807', 15)
+    request = driver.wait_for_request('api/leerlingen/', 15)
+    bearer_token = request.headers['authorization']
+    user_id = request.url.split('api/leerlingen/')[1]
+    
+    login['user_id'] = user_id
+    login['bearer_token'] = bearer_token
 
-    try:
-        bearer_token = request.headers['authorization']
-        set_key('.env', f'{person_name}_BEARER_TOKEN', bearer_token)
-    except Exception as e:
-        print(f'Error fetching token: {e}')
+with open('credentials.json', 'r+') as json_file:
+    json_file.seek(0)
+    json.dump(credentials_json,json_file)
+
