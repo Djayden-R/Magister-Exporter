@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from seleniumwire import webdriver  # Import from seleniumwire
 from seleniumwire.webdriver import ChromeOptions
 from selenium.webdriver.common.by import By
@@ -8,7 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from time import sleep
 import logging
 
-def fetch_magister_token(username, password, headless = False):
+def fetch_magister_token(username, password, headless = True):
     if headless:
         # Make browser headless
         options = ChromeOptions()
@@ -43,7 +43,7 @@ def fetch_magister_token(username, password, headless = False):
 
     request = driver.wait_for_request('api/leerlingen/', 15)
     bearer_token = request.headers['authorization']
-    logging.debug(f"Got bearer token{bearer_token[:20]}")
+    logging.debug(f"Got bearer token{bearer_token[:20]}...")
 
     user_id = request.url.split('api/leerlingen/')[1]
     if "/" in user_id:
@@ -51,30 +51,21 @@ def fetch_magister_token(username, password, headless = False):
     
     return user_id,  bearer_token
 
-def fetch_magister_calendar(user_id, bearer_token):
+def fetch_magister_calendar(user_id, bearer_token, days_to_fetch):
     headers = {
         "Authorization": bearer_token,
         "content-type": "application/json"
     }
 
-    url = f"https://middelharnis.magister.net/api/personen/{user_id}/afspraken?status=1&tot=2026-03-07&van=2026-02-26"
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    end_date = (datetime.now() + timedelta(days=days_to_fetch)).strftime("%Y-%m-%d")
+
+    url = f"https://middelharnis.magister.net/api/personen/{user_id}/afspraken?status=1&tot={end_date}&van={current_date}"
 
     r = requests.get(url, headers=headers)
 
-    rooster = json.loads(r.text)
-
-    # lessen = rooster['Items']
-    # prev_day = None
-
-    # for les in lessen:
-    #     date_str = les["Start"]
-    #     date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-    #     day = date.strftime("%A (%d/%m)")
-
-    #     if day != prev_day:
-    #         print(day)
-    #         prev_day = day
-
-    #     print(f"{les['LesuurVan']}e uur - {les['Omschrijving']} {les['Lokatie']}")
-
-    return rooster
+    if r.ok:
+        calendar = json.loads(r.text)
+        return calendar
+    else:
+        return None
