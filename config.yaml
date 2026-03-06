@@ -1,0 +1,12 @@
+name: "Magister Exporter"
+version: "0.0.1"
+slug: magister-exporter
+description: "Description here"
+options:
+  credentials: []
+schema:
+  credentials:
+    - name: str
+      username: str
+      password: str
+ports: {}
