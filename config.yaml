@@ -4,9 +4,11 @@ slug: magister-exporter
 description: "Description here"
 options:
   credentials: []
+  days_to_fetch: 14
 schema:
   credentials:
     - name: str
       username: str
       password: str
+  days_to_fetch: int
 ports: {}
