@@ -41,6 +41,7 @@ def get_user_info(username):
 
 
 async def main():
+    asyncio.sleep(10)
     credentials_list, days_to_fetch = get_options()
 
     if not credentials_list:
