@@ -1,7 +1,7 @@
 name: "Magister Exporter"
-version: "0.0.11"
+version: "0.0.12"
 slug: magister_exporter
-image: /magister_exporter/icon.jpg
+icon: /magister_exporter/icon.jpg
 arch:
   - aarch64
   - amd64
