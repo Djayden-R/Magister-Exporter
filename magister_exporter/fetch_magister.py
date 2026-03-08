@@ -11,32 +11,32 @@ async def fetch_magister_token(playwright: Playwright, name, username, password,
     browser = await chromium.launch(headless=headless)
     page = await browser.new_page()
 
-    logging.info(f"Finding {name}'s token")
-    logging.info("Going to Magister log-in page")
+    print(f"Finding {name}'s token")
+    print("Going to Magister log-in page")
     await page.goto("https://middelharnis.magister.net/oidc/redirect_callback.html")
     
-    logging.info("Filling in username")
+    print("Filling in username")
     await page.get_by_test_id("username").fill(username)
     await page.get_by_test_id("username_submit").click()
 
-    logging.info("Filling in password")
+    print("Filling in password")
     await page.get_by_test_id('i0118').fill(password)
     await page.get_by_test_id("idSIButton9").click()
 
-    logging.info("Pressing 'Stay logged in'")
+    print("Pressing 'Stay logged in'")
     await page.get_by_test_id('idSIButton9').click()
     
     # Use a glob url pattern
     async with page.expect_response("**/api/leerlingen/**") as response_info:
-        logging.info("Found network request with token")
+        print("Found network request with token")
         response = await response_info.value
         headers = await response.request.all_headers()
         url = response.url
     
     token = headers.get('authorization', None)
     user_id = url.split('/api/leerlingen/')[1].split("/")[0]
-    logging.info(f"Bearer token found: {token[:20]}")
-    logging.info(f"User id found: {user_id}")
+    print(f"Bearer token found: {token[:20]}")
+    print(f"User id found: {user_id}")
 
     await browser.close()
     return token, user_id

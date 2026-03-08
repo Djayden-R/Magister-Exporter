@@ -41,7 +41,7 @@ def get_user_info(username):
 
 
 async def main():
-    logging.info("Addon started, sleeping 10 seconds...")
+    print("Addon started, sleeping 10 seconds...")
     await asyncio.sleep(10)
     credentials_list, days_to_fetch = get_options()
 
@@ -54,7 +54,7 @@ async def main():
         username = credenials.get('username', None)
         password = credenials.get('password', None)
 
-        logging.info(f"Checking info for {username}")
+        print(f"Checking info for {username}")
 
         if not (username and password):
             logging.error(f"Invalid credentials found (username={username}, password={password})")
@@ -66,7 +66,7 @@ async def main():
             calendar = fetch_magister_calendar(user_id, token, days_to_fetch)
     
         if not (token and user_id) or not calendar:
-            logging.info("Fetching token...")
+            print("Fetching token...")
             async with async_playwright() as playwright:
                 token, user_id = await fetch_magister_token(playwright, name, username, password)
         
@@ -81,10 +81,10 @@ async def main():
             day = date.strftime("%A (%d/%m)")
 
             if day != prev_day:
-                logging.info(day)
+                print(day)
                 prev_day = day
 
-            logging.info(f"{lesson['LesuurVan']}e hour - {lesson['Omschrijving']} {lesson['Lokatie']}")
+            print(f"{lesson['LesuurVan']}e hour - {lesson['Omschrijving']} {lesson['Lokatie']}")
 
 if __name__ == "__main__":
     asyncio.run(main())
