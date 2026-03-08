@@ -1,5 +1,5 @@
 name: "Magister Exporter"
-version: "0.0.12"
+version: "0.0.13"
 slug: magister_exporter
 icon: /magister_exporter/icon.jpg
 arch:
