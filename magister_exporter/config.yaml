@@ -1,6 +1,11 @@
 name: "Magister Exporter"
 version: "0.0.1"
 slug: magister_exporter
+
+arch:
+  - aarch64
+  - amd64
+
 description: "Description here"
 options:
   credentials: []
