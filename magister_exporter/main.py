@@ -11,7 +11,7 @@ import socket
 import threading
 
 PROGRAM_PATH = Path("/usr/src/app")
-OPTIONS_FILE_PATH = "/data/options.json"
+OPTIONS_FILE_PATH = Path("/data/options.json")
 CALENDAR_FOLDER = PROGRAM_PATH / "calendars"
 
 
@@ -57,6 +57,8 @@ def get_user_info(username):
 def save_user_info(username, token, user_id):
     token_path = PROGRAM_PATH / "tokens.json"
 
+    print("Saving token to tokens.json")
+
     if token_path.exists():
         with open(token_path, 'r') as f:
             content = f.read()
@@ -71,7 +73,6 @@ def save_user_info(username, token, user_id):
 
     with open(token_path, 'w') as f: 
         data[username] = {"token": token, "user_id": user_id}
-        print(f"Dumping data: {data}")
         json.dump(data, f, indent=2)
 
 
@@ -84,11 +85,13 @@ def start_http_server():
     thread = threading.Thread(target=server.serve_forever)
     thread.daemon = True
     thread.start()
+    print(f"Started server on http://{socket.gethostname()}:15060")
 
 
 async def main():
     if not CALENDAR_FOLDER.exists():
         CALENDAR_FOLDER.mkdir(parents=True, exist_ok=True)
+        print(f"Created folder: {CALENDAR_FOLDER}")
     
     start_http_server()
     credentials_list, days_to_fetch = get_options()
@@ -107,12 +110,13 @@ async def main():
         if not (username and password):
             logging.error(f"Invalid credentials found (username={username}, password={password})")
             continue
-
+        
         token, user_id = get_user_info(username)
 
         calendar = None
 
         if token and user_id:
+            print("Token found in tokens.json")
             calendar = fetch_magister_calendar(user_id, token, days_to_fetch)
     
         if not (token and user_id) or not calendar:

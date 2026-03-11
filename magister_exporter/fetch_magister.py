@@ -12,23 +12,18 @@ async def fetch_magister_token(playwright: Playwright, name, username, password,
     page = await browser.new_page()
 
     print(f"Finding {name}'s token")
-    print("Going to Magister log-in page")
     await page.goto("https://middelharnis.magister.net/oidc/redirect_callback.html")
     
-    print("Filling in username")
     await page.get_by_test_id("username").fill(username)
     await page.get_by_test_id("username_submit").click()
 
-    print("Filling in password")
     await page.get_by_test_id('i0118').fill(password)
     await page.get_by_test_id("idSIButton9").click()
 
-    print("Pressing 'Stay logged in'")
     await page.get_by_test_id('idSIButton9').click()
     
     # Use a glob url pattern
     async with page.expect_response("**/api/leerlingen/**") as response_info:
-        print("Found network request with token")
         response = await response_info.value
         headers = await response.request.all_headers()
         url = response.url
