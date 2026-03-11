@@ -2,13 +2,26 @@ import json
 import logging
 from fetch_magister import fetch_magister_calendar, fetch_magister_token
 from pathlib import Path
-from datetime import datetime
 from playwright.async_api import async_playwright
 import asyncio
 from ics_manager import calendar_to_ics, save_ics_file, read_ics_file
+import http.server
+from http.server import SimpleHTTPRequestHandler
+import socket
+import threading
 
 PROGRAM_PATH = Path("/usr/src/app")
 OPTIONS_FILE_PATH = "/data/options.json"
+CALENDAR_FOLDER = PROGRAM_PATH / "calendars"
+
+
+# Source - https://stackoverflow.com/a/52531444
+# Posted by Andy Hayden, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-03-11, License - CC BY-SA 4.0
+
+class HTTPHandler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=CALENDAR_FOLDER, **kwargs)
 
 
 def get_options():
@@ -41,9 +54,38 @@ def get_user_info(username):
     return token, user_id
 
 
+def save_user_info(username, token, user_id):
+    token_path = PROGRAM_PATH / "tokens.json"
+
+    if token_path.exists():
+        with open(token_path, 'r') as f:
+            content = f.read()
+            if content != "":
+                print(content)
+                data = json.loads(content)
+                print(f"Data found: {data}")
+            else:
+                data = {}
+    else:
+        data = {}
+
+    with open(token_path, 'w') as f: 
+        data[username] = {"token": token, "user_id": user_id}
+        print(f"Dumping data: {data}")
+        json.dump(data, f, indent=2)
+
+def start_http_server():
+    server = http.server.ThreadingHTTPServer((socket.gethostbyname(), 15060), HTTPHandler)
+    thread = threading.Thread(target=server.serve_forever)
+    thread.daemon = True
+    thread.start()
+
+
 async def main():
-    print("Addon started, sleeping 10 seconds...")
-    await asyncio.sleep(10)
+    if not CALENDAR_FOLDER.exists():
+        CALENDAR_FOLDER.mkdir(parents=True, exist_ok=True)
+    
+    start_http_server()
     credentials_list, days_to_fetch = get_options()
 
     if not credentials_list:
@@ -73,6 +115,8 @@ async def main():
             async with async_playwright() as playwright:
                 token, user_id = await fetch_magister_token(playwright, name, username, password)
         
+        save_user_info(username, token, user_id)
+        
         calendar = fetch_magister_calendar(user_id, token, days_to_fetch)
 
         if not calendar:
@@ -81,9 +125,7 @@ async def main():
 
         ics_calendar = calendar_to_ics(calendar)
 
-        calendar_folder = PROGRAM_PATH / "calendars"
-
-        save_ics_file(ics_calendar, calendar_folder, "Djayden_Magister.ics")
+        save_ics_file(ics_calendar, CALENDAR_FOLDER, "Djayden_Magister.ics")
 
 if __name__ == "__main__":
     asyncio.run(main())
