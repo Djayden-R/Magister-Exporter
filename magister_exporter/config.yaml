@@ -1,8 +1,8 @@
 name: "Magister Exporter"
-version: "0.0.26"
+version: "0.0.27"
 slug: magister_exporter
 arch:
-  - aarch64
+  - arm64
   - amd64
 description: "Magister Exporter fetches Magister tokens and uses those to fetch the calendars, these will be hosted on port 15060"
 options:

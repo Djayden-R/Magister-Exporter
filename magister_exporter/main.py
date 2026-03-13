@@ -20,10 +20,6 @@ IP_ADRESS = s.getsockname()[0]
 s.close()
 
 
-# Source - https://stackoverflow.com/a/52531444
-# Posted by Andy Hayden, modified by community. See post 'Timeline' for change history
-# Retrieved 2026-03-11, License - CC BY-SA 4.0
-
 class HTTPHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=CALENDAR_FOLDER, **kwargs)
@@ -70,25 +66,19 @@ def save_user_info(username, token, user_id):
 
     print("Saving token to tokens.json")
 
+    data = {}
+
     if token_path.exists():
         with open(token_path, 'r') as f:
             content = f.read()
             if content != "":
                 print(content)
                 data = json.loads(content)
-            else:
-                data = {}
-    else:
-        data = {}
 
     with open(token_path, 'w') as f: 
         data[username] = {"token": token, "user_id": user_id}
         json.dump(data, f, indent=2)
 
-
-# Source - https://stackoverflow.com/q/63928479
-# Posted by Elie, modified by community. See post 'Timeline' for change history
-# Retrieved 2026-03-11, License - CC BY-SA 4.0
 
 def start_http_server():
     server = http.server.ThreadingHTTPServer(("0.0.0.0", 15060), HTTPHandler)
