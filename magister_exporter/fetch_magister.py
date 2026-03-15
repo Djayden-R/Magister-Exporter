@@ -6,7 +6,7 @@ from playwright.async_api import Playwright
 from retrying import retry
 
 @retry(stop_max_attempt_number=3)
-async def fetch_magister_token(playwright: Playwright, name, username, password, headless = True):
+async def fetch_magister_token(playwright: Playwright, name: str, username: str, password:str, headless: bool = True):
     playwright.selectors.set_test_id_attribute("id")
 
     chromium = playwright.chromium
@@ -32,6 +32,10 @@ async def fetch_magister_token(playwright: Playwright, name, username, password,
     
     token = headers.get('authorization', None)
     user_id = url.split('/api/leerlingen/')[1].split("/")[0]
+
+    if not token:
+        raise ValueError("Unable to find token in requests")
+    
     print(f"Bearer token found: {token[:20]}")
     print(f"User id found: {user_id}")
 
@@ -39,7 +43,7 @@ async def fetch_magister_token(playwright: Playwright, name, username, password,
     return token, user_id
 
 
-def fetch_magister_calendar(user_id, bearer_token, days_to_fetch):
+def fetch_magister_calendar(user_id: str, bearer_token: str, days_to_fetch: int):
     headers = {
         "Authorization": bearer_token,
         "content-type": "application/json"

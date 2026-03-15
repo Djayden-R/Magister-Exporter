@@ -8,8 +8,10 @@ def calendar_to_ics(calendar: dict[str, list]) -> Calendar:
     for event in calendar["Items"]:
         e = Event()
         e.name = event.get("Omschrijving", None)
-        if e.name == "flex":
+        
+        if not e.name or e.name == "flex":
             continue
+
         e.begin = event.get("Start", None).replace(" ", "")
         e.end = event.get("Einde", None).replace(" ", "")
         e.uid = str(uuid.uuid4())

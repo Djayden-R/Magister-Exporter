@@ -14,11 +14,6 @@ PROGRAM_PATH = Path("/usr/src/app")
 OPTIONS_FILE_PATH = Path("/data/options.json")
 CALENDAR_FOLDER = PROGRAM_PATH / "calendars"
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(("8.8.8.8", 80))
-IP_ADRESS = s.getsockname()[0]
-s.close()
-
 
 class HTTPHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -30,20 +25,30 @@ class HTTPHandler(SimpleHTTPRequestHandler):
         return None
 
 
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
+
+IP_ADRESS = get_ip()
+
+
 def get_options():
     with open(OPTIONS_FILE_PATH, 'r') as f:
         options = json.load(f)
 
     # Load dictionary with credentials
     # Expected format: [{'username': username, 'password': password}, ...]
-    credentials_list: list[dict] = options['credentials']
+    credentials_list: list[dict[str, str]] = options['credentials']
     days_to_fetch: int = options['days_to_fetch']
     refresh_time: int = options['refresh_time']
 
     return credentials_list, days_to_fetch, refresh_time
 
 
-def get_user_info(username):
+def get_user_info(username: str):
     token_path = PROGRAM_PATH / "tokens.json"
 
     token = user_id = None
@@ -61,7 +66,7 @@ def get_user_info(username):
     return token, user_id
 
 
-def save_user_info(username, token, user_id):
+def save_user_info(username: str, token: str, user_id: str):
     token_path = PROGRAM_PATH / "tokens.json"
 
     print("Saving token to tokens.json")
@@ -109,8 +114,8 @@ async def main():
 
             print(f"Checking info for {username}")
 
-            if not (username and password):
-                logging.error(f"Invalid credentials found (username={username}, password={password})")
+            if not (name and username and password):
+                logging.error(f"Invalid credentials found (name={name}, username={username}, password={password})")
                 continue
             
             token, user_id = get_user_info(username)
