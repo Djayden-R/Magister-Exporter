@@ -1,8 +1,8 @@
 name: "Magister Exporter"
-version: "0.0.27"
+version: "0.0.28"
 slug: magister_exporter
 arch:
-  - arm64
+  - aarch64
   - amd64
 description: "Magister Exporter fetches Magister tokens and uses those to fetch the calendars, these will be hosted on port 15060"
 options:
@@ -13,8 +13,9 @@ schema:
   credentials:
     - name: str
       username: str
-      password: str
-      uuid: str
+      password: password
+      uuid: "match([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$)"
+  base_url: url
   days_to_fetch: int
   refresh_time: int
 ports:
