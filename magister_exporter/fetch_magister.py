@@ -2,46 +2,52 @@ import requests
 import json
 from datetime import datetime, timedelta
 import logging
-from playwright.async_api import Playwright
+from playwright.async_api import Playwright, TimeoutError
 from retrying import retry
 
 @retry(stop_max_attempt_number=3)
 async def fetch_magister_token(playwright: Playwright, name: str, username: str, password:str, headless: bool = True):
-    playwright.selectors.set_test_id_attribute("id")
+    try:
+        playwright.selectors.set_test_id_attribute("id")
 
-    chromium = playwright.chromium
-    browser = await chromium.launch(headless=headless)
-    page = await browser.new_page()
+        chromium = playwright.chromium
+        browser = await chromium.launch(headless=headless)
+        page = await browser.new_page()
 
-    print(f"Finding {name}'s token")
-    await page.goto("https://middelharnis.magister.net/oidc/redirect_callback.html")
-    
-    await page.get_by_test_id("username").fill(username)
-    await page.get_by_test_id("username_submit").click()
+        print(f"Finding {name}'s token")
+        await page.goto("https://middelharnis.magister.net/oidc/redirect_callback.html")
+        
+        await page.get_by_test_id("username").fill(username)
+        await page.get_by_test_id("username_submit").click()
+        print("Submitted username")
 
-    await page.get_by_test_id('i0118').fill(password)
-    await page.get_by_test_id("idSIButton9").click()
+        await page.get_by_test_id('i0118').fill(password)
+        await page.get_by_test_id("idSIButton9").click()
+        print("Submitted password")
 
-    await page.get_by_test_id('idSIButton9').click()
-    
-    # Use a glob url pattern
-    async with page.expect_response("**/api/leerlingen/**") as response_info:
-        response = await response_info.value
-        headers = await response.request.all_headers()
-        url = response.url
-    
-    token = headers.get('authorization', None)
-    user_id = url.split('/api/leerlingen/')[1].split("/")[0]
+        await page.get_by_test_id('idSIButton9').click()
+        print("Continued past Microsoft prompt")
+        
+        # Use a glob url pattern
+        async with page.expect_response("**/api/leerlingen/**") as response_info:
+            print("Found network leerling request")
+            response = await response_info.value
+            headers = await response.request.all_headers()
+            url = response.url
+        
+        token = headers.get('authorization', None)
+        user_id = url.split('/api/leerlingen/')[1].split("/")[0]
 
-    if not token:
-        raise ValueError("Unable to find token in requests")
-    
-    print(f"Bearer token found: {token[:20]}")
-    print(f"User id found: {user_id}")
+        if not token:
+            raise ValueError("Unable to find token in requests")
+        
+        print(f"Bearer token found: {token[:20]}")
+        print(f"User id found: {user_id}")
 
-    await browser.close()
-    return token, user_id
-
+        await browser.close()
+        return token, user_id
+    except TimeoutError:
+        raise TimeoutError(f"Failed to load calendar: \nCurrent url: {page.url}\nPage content: {page.content()}")
 
 def fetch_magister_calendar(user_id: str, bearer_token: str, days_to_fetch: int):
     headers = {
