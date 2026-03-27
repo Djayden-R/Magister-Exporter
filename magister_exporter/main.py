@@ -14,9 +14,6 @@ PROGRAM_PATH = Path("/usr/src/app")
 OPTIONS_FILE_PATH = Path("/data/options.json")
 CALENDAR_FOLDER = PROGRAM_PATH / "calendars"
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
 class HTTPHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=CALENDAR_FOLDER, **kwargs)
@@ -25,6 +22,22 @@ class HTTPHandler(SimpleHTTPRequestHandler):
     def list_directory(self, path):
         self.send_error(404)
         return None
+
+
+def set_logging_mode(logging_mode_str: str):
+    global logger
+    logging_map = {
+        "debug":logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR
+     }
+    
+    logging_mode = logging_map.get(logging_mode_str, None)
+    if not logging_mode:
+        raise ValueError(f"Logging mode not defined")
+    logging.basicConfig(level=logging_mode)
+    logger = logging.getLogger(__name__)
 
 
 def get_ip():
@@ -47,8 +60,9 @@ def get_options():
     days_to_fetch: int = options['days_to_fetch']
     refresh_time: int = options['refresh_time']
     base_url: str = options['base_url']
+    logging_mode: str = options['logging_mode']
 
-    return credentials_list, days_to_fetch, refresh_time, base_url
+    return credentials_list, days_to_fetch, refresh_time, base_url, logging_mode
 
 
 def get_user_info(username: str):
@@ -96,12 +110,14 @@ def start_http_server():
 
 
 async def main():
+    credentials_list, days_to_fetch, refresh_time, base_url, logging_mode = get_options()
+    set_logging_mode(logging_mode)
+
     if not CALENDAR_FOLDER.exists():
         CALENDAR_FOLDER.mkdir(parents=True, exist_ok=True)
         logger.debug(f"Created folder: {CALENDAR_FOLDER}")
     
     start_http_server()
-    credentials_list, days_to_fetch, refresh_time, base_url = get_options()
 
     if not credentials_list:
         logger.error("Credentials not defined, exiting program...")
