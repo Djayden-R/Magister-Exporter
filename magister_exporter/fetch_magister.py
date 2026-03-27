@@ -37,6 +37,8 @@ async def fetch_magister_token(playwright: Playwright, base_url: str, name: str,
         passwordError means password is wrong, 
         KmsiDescription means that the password is correct
         """
+        await page.wait_for_load_state("load")
+        
         signed_in_description = await page.get_by_test_id('KmsiDescription').is_visible(timeout=10)
         password_error = await page.get_by_test_id('passwordError').is_visible(timeout=10)
 
