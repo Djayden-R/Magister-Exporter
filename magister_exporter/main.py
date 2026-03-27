@@ -70,7 +70,7 @@ def get_user_info(username: str):
 def save_user_info(username: str, token: str, user_id: str):
     token_path = PROGRAM_PATH / "tokens.json"
 
-    print("Saving token to tokens.json")
+    logging.info("Saving token to tokens.json")
 
     data = {}
 
@@ -78,7 +78,6 @@ def save_user_info(username: str, token: str, user_id: str):
         with open(token_path, 'r') as f:
             content = f.read()
             if content != "":
-                print(content)
                 data = json.loads(content)
 
     with open(token_path, 'w') as f: 
@@ -91,13 +90,13 @@ def start_http_server():
     thread = threading.Thread(target=server.serve_forever)
     thread.daemon = True
     thread.start()
-    print(f"Started server on http://{IP_ADRESS}:15060")
+    logging.info(f"Started server on http://{IP_ADRESS}:15060")
 
 
 async def main():
     if not CALENDAR_FOLDER.exists():
         CALENDAR_FOLDER.mkdir(parents=True, exist_ok=True)
-        print(f"Created folder: {CALENDAR_FOLDER}")
+        logging.info(f"Created folder: {CALENDAR_FOLDER}")
     
     start_http_server()
     credentials_list, days_to_fetch, refresh_time, base_url = get_options()
@@ -113,7 +112,7 @@ async def main():
             password = credenials.get('password', None)
             uuid = credenials.get('uuid', None)
 
-            print(f"Checking info for {username}")
+            logging.info(f"Checking info for {username}")
 
             if not (name and username and password):
                 logging.error(f"Invalid credentials found (name={name}, username={username}, password={password})")
@@ -127,11 +126,11 @@ async def main():
             calendar = None
 
             if token and user_id:
-                print("Token found in tokens.json")
+                logging.info("Token found in tokens.json")
                 calendar = fetch_magister_calendar(base_url, user_id, token, days_to_fetch)
         
             if not (token and user_id) or not calendar:
-                print("Fetching token...")
+                logging.info("Fetching token...")
                 async with async_playwright() as playwright:
                     token, user_id = await fetch_magister_token(base_url, playwright, name, username, password)
             
@@ -140,7 +139,7 @@ async def main():
             calendar = fetch_magister_calendar(base_url, user_id, token, days_to_fetch)
 
             if not calendar:
-                print("Unable to fetch magister calendar")
+                logging.error("Unable to fetch magister calendar")
                 continue
 
             ics_calendar = calendar_to_ics(calendar)
@@ -149,7 +148,7 @@ async def main():
 
             save_ics_file(ics_calendar, CALENDAR_FOLDER, file_name)
 
-            print(f"{name}'s calendar is hosted on http://{IP_ADRESS}:15060/{file_name}")
+            logging.info(f"{name}'s calendar is hosted on http://{IP_ADRESS}:15060/{file_name}")
 
         await asyncio.sleep(refresh_time * 60)
 

@@ -31,7 +31,7 @@ def calendar_to_ics(calendar: dict[str, list]) -> Calendar:
 
 def save_ics_file(ics_calendar: Calendar, base_path: Path, name: str):
     file_path = base_path / name
-    print(f"Saved calendar to {file_path}")
+    logging.info(f"Saved calendar to {file_path}")
 
     with open(file_path, 'w') as ics_file:
         ics_file.writelines(ics_calendar.serialize_iter())
