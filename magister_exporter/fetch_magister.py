@@ -2,11 +2,16 @@ import requests
 import json
 from datetime import datetime, timedelta
 import logging
-from playwright.async_api import Playwright, TimeoutError
+from playwright.async_api import Playwright, TimeoutError, async_playwright
 from retrying import retry
+import asyncio
+
+class UnexpectedPageState(Exception):
+    pass
 
 @retry(stop_max_attempt_number=3)
 async def fetch_magister_token(playwright: Playwright, name: str, username: str, password:str, headless: bool = True):
+    page = None
     try:
         playwright.selectors.set_test_id_attribute("id")
 
@@ -21,15 +26,32 @@ async def fetch_magister_token(playwright: Playwright, name: str, username: str,
         await page.get_by_test_id("username_submit").click()
         print("Submitted username")
 
+        await page.wait_for_load_state("load")
+
         await page.get_by_test_id('i0118').fill(password)
         await page.get_by_test_id("idSIButton9").click()
         print("Submitted password")
 
+        """
+        Now check if id passwordError or id KmsiDescription is visible, 
+        passwordError means password is wrong, 
+        KmsiDescription means that the password is correct
+        """
+        signed_in_description = await page.get_by_test_id('KmsiDescription').is_visible(timeout=10)
+        password_error = await page.get_by_test_id('passwordError').is_visible(timeout=10)
+
+        if password_error:
+            print("Password is incorrect")
+            raise ValueError
+        elif not signed_in_description:
+            print("Program didn't continue for an unexpected reason")
+            raise UnexpectedPageState
+        
         await page.get_by_test_id('idSIButton9').click()
         print("Continued past Microsoft prompt")
         
         # Use a glob url pattern
-        async with page.expect_response("**/api/leerlingen/**") as response_info:
+        async with page.expect_response("**/api/leerlingen/**", timeout=0) as response_info:
             print("Found network leerling request")
             response = await response_info.value
             headers = await response.request.all_headers()
@@ -47,8 +69,9 @@ async def fetch_magister_token(playwright: Playwright, name: str, username: str,
         await browser.close()
         return token, user_id
     except TimeoutError:
-        content = await page.content()
-        raise TimeoutError(f"Failed to load calendar: \nCurrent url: {page.url}\nPage content: {content}")
+        if page:
+            content = await page.content()
+            raise TimeoutError(f"Failed to load calendar: \nCurrent url: {page.url}\nPage content: {content}")
 
 def fetch_magister_calendar(user_id: str, bearer_token: str, days_to_fetch: int):
     headers = {
