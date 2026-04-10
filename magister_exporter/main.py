@@ -150,7 +150,12 @@ async def main():
             if not (token and user_id) or not calendar:
                 logger.debug("Fetching token...")
                 async with async_playwright() as playwright:
-                    token, user_id = await fetch_magister_token(playwright, base_url, name, username, password)
+                    result = await fetch_magister_token(playwright, base_url, name, username, password)
+                    if result:
+                        token, user_id = result
+                    else:
+                        logger.error(f"Failed to fetch token for {username}")
+                        continue
             
             save_user_info(username, token, user_id)
             
