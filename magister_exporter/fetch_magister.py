@@ -3,7 +3,6 @@ import json
 from datetime import datetime, timedelta
 import logging
 from playwright.async_api import Playwright, TimeoutError, async_playwright
-from retrying import retry
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -11,7 +10,30 @@ logger = logging.getLogger(__name__)
 class UnexpectedPageState(Exception):
     pass
 
-@retry(stop_max_attempt_number=3)
+from functools import wraps
+
+class TooManyTriesException(Exception):
+    pass
+
+def tries(times):
+    def func_wrapper(f):
+        @wraps(f)
+        async def wrapper(*args, **kwargs):
+            last_exc = None
+
+            for i in range(times):
+                try:
+                    return await f(*args, **kwargs)
+                except Exception as exc:
+                    last_exc = exc
+                    logger.debug("retry:", i + 1)
+
+            raise TooManyTriesException() from last_exc
+
+        return wrapper
+    return func_wrapper
+
+@tries(times=3)
 async def fetch_magister_token(playwright: Playwright, base_url: str, name: str, username: str, password:str, headless: bool = True):
     page = None
     try:
