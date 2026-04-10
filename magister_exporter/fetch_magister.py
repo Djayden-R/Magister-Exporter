@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import logging
 from playwright.async_api import Playwright, TimeoutError, async_playwright
 import asyncio
+from collections.abc import Iterable
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,7 @@ from functools import wraps
 class TooManyTriesException(Exception):
     pass
 
-def tries(times):
+def tries(times: int, no_retry_exceptions: tuple[type[BaseException], ...] = ()):
     def func_wrapper(f):
         @wraps(f)
         async def wrapper(*args, **kwargs):
@@ -25,15 +27,19 @@ def tries(times):
                 try:
                     return await f(*args, **kwargs)
                 except Exception as exc:
+                    # If exception type is in no-retry list, re-raise immediately
+                    if isinstance(exc, no_retry_exceptions):
+                        raise
+
                     last_exc = exc
-                    logger.debug("retry:", i + 1)
+                    logger.debug(f"retry: {i+1}/{times} ({type(exc).__name__})")
 
             raise TooManyTriesException() from last_exc
 
         return wrapper
     return func_wrapper
 
-@tries(times=3)
+@tries(times=3, no_retry_exceptions=(ValueError, UnexpectedPageState))
 async def fetch_magister_token(playwright: Playwright, base_url: str, name: str, username: str, password:str, headless: bool = True):
     page = None
     try:
